@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34330.188
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TextFileFilter", "TextFileFilter\TextFileFilter.csproj", "{A5947946-943F-4DC0-9D6C-BB6B8A6F57CE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TamakenService", "..\TamakenService\TamakenService.csproj", "{9772956E-CA29-4E99-A2D8-FD66C79C545E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A5947946-943F-4DC0-9D6C-BB6B8A6F57CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5947946-943F-4DC0-9D6C-BB6B8A6F57CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5947946-943F-4DC0-9D6C-BB6B8A6F57CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5947946-943F-4DC0-9D6C-BB6B8A6F57CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9772956E-CA29-4E99-A2D8-FD66C79C545E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9772956E-CA29-4E99-A2D8-FD66C79C545E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9772956E-CA29-4E99-A2D8-FD66C79C545E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9772956E-CA29-4E99-A2D8-FD66C79C545E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A78EB54C-F0E3-4FB0-9988-1FB74C88B4F1}
+	EndGlobalSection
+EndGlobal
