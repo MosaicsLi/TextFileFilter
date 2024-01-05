@@ -79,14 +79,17 @@ internal class Program
             {
                 HashSet<string> batch = new HashSet<string>(fileList.Skip(i).Take(batchSize));
 
-                logger.WriteLine($"目前份數:{i}/{fileList.Count}", true);
+                logger.WriteLine($"目前份數:{i} 剩餘: {fileList.Count}", true);
 
                 ThreadWorker threadWorker = new ThreadWorker(batch, logger);//使用ThreadWorker避免巢狀
                 HashSet<ReadSampleData> sampleData = threadWorker.Run();
 
+                logger.WriteLine($"開始輸出基因:{i} 剩餘: {fileList.Count}", true);
                 ExportFile.SaveSetToCSV(sampleData, outputPath);
+                logger.WriteLine($"開始輸出數據:{i} 剩餘: {fileList.Count}", true);
                 ExportFile.SaveSetToMathCSV(sampleData, SNPMathFeatureHashtable, outputPath.Replace(".csv", "Math.csv"));
 
+                logger.WriteLine($"已輸出當前批次資料", true);
                 fileList.ExceptWith(batch);// 從原始 fileList 中移除已處理的部分
                 sampleData.Clear();
                 batch.Clear();
