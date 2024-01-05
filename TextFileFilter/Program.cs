@@ -1,18 +1,66 @@
 ﻿using System.Collections;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using TamakenService.Log;
 using TamakenService.Services.TextFileFlter;
 
 internal class Program
 {
-
-    private static readonly object fileWriteLock = new object();
     private static void Main(string[] args)
     {
         Console.WriteLine($"Windows:{RuntimeInformation.IsOSPlatform(OSPlatform.Windows)}");
         Console.WriteLine($"Linux:{RuntimeInformation.IsOSPlatform(OSPlatform.Linux)}");
         Console.WriteLine($"OSX:{RuntimeInformation.IsOSPlatform(OSPlatform.OSX)}");
         var logger = new NlogService($"log/{DateTime.Now.ToString("yyyyMMdd")}.log");
+
+        Console.WriteLine($"是否需要開啟debugmod，如不需要可以直接跳過");
+        string? debugmodeInput = logger.ReadLine();
+        if (!string.IsNullOrWhiteSpace(debugmodeInput)) logger.IsDebugMod = true;
+
+        logger.WriteLine("請輸入篩選條件檔的完整路徑(檔案必須為CSV檔，且第一欄為判斷條件，第二欄為欄位顯示名稱，第三欄為數值化條件)：", true);
+        string SNPfilePath = @"C:\cubic\Chip\SNP.csv";
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) SNPfilePath = $"{AppDomain.CurrentDomain.BaseDirectory}Chip/SNP.csv";
+        logger.WriteLine("預設：" + SNPfilePath, true);
+        string? inputSNPfilePath = logger.ReadLine();
+        if (!String.IsNullOrEmpty(inputSNPfilePath))
+        {
+            SNPfilePath = inputSNPfilePath;
+        }
+        var filterCriteria = new FilterCriteria(SNPfilePath, logger);//設定讀取Sample資料的條件物件物件
+        var SNPIndexList = filterCriteria.GetSNPIndexList();//取得欲分析的基因名稱
+        var SNPHashtable = filterCriteria.GetSNPHashtable();//取得顯示基因名稱與sample基因名稱對應Hashtable
+        var SNPMathFeatureHashtable = filterCriteria.GetSNPMathFeatureHashtable();//取得數值化參數與sample基因名稱對應hashtabll
+
+        logger.WriteLine("請輸入Sample存放資料夾根路徑：", true);
+        string rootFilePath = @"C:\cubic\Chip\";
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) rootFilePath = $"{AppDomain.CurrentDomain.BaseDirectory}Chip/";
+        logger.WriteLine("預設：" + rootFilePath, true);
+        string? inputfilePath = logger.ReadLine();
+        if (!String.IsNullOrEmpty(inputfilePath))
+        {
+            rootFilePath = inputfilePath;
+        }
+        var folderList = new SampleFileGetter(rootFilePath, logger);
+        HashSet<string> fileList = folderList.GetFileList;
+
+        logger.WriteLine("請輸入檢測結果的完整路徑：", true);
+        string outputPath = @"C:\cubic\Chip\output.csv";
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) outputPath = $"{AppDomain.CurrentDomain.BaseDirectory}Chip/output.csv";
+        logger.WriteLine("預設：" + outputPath, true);
+        string? inputoutputPath = logger.ReadLine();
+        if (!String.IsNullOrEmpty(inputoutputPath))
+        {
+            outputPath = inputoutputPath;
+        }
+        var ExportFile = new ExportFile(SNPIndexList, SNPHashtable, logger);
+        logger.WriteLine("請輸入每次分析資料大小：", true);
+        int batchSize = 100; // 每份的大小
+        logger.WriteLine("預設：" + batchSize, true);
+        string? inputbatchSize = logger.ReadLine();
+        if (!String.IsNullOrEmpty(inputbatchSize) && Regex.IsMatch(inputbatchSize, "^[0-9]*$"))
+        {
+            batchSize = int.Parse(inputbatchSize);
+        }
         try
         {
             /* USEDB
@@ -27,98 +75,24 @@ internal class Program
             var DBdata = new HeightDB(dbPath);
             var SNPList = DBdata.getASAList();
             */
-
-            logger.WriteLine("請輸入篩選條件檔的完整路徑(檔案必須為CSV檔，且第一欄為判斷條件，第二欄為欄位顯示名稱，第三欄為數值化條件)：");
-            string SNPfilePath = @"C:\cubic\Chip\SNP.csv";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) SNPfilePath = $"{AppDomain.CurrentDomain.BaseDirectory}Chip/SNP.csv";
-            logger.WriteLine("預設：" + SNPfilePath);
-            string? inputSNPfilePath = logger.ReadLine();
-            if (!String.IsNullOrEmpty(inputSNPfilePath))
-            {
-                SNPfilePath = inputSNPfilePath;
-            }
-            var filterCriteria = new FilterCriteria(SNPfilePath, logger);
-            var SNPIndexList = filterCriteria.GetSNPIndexList();
-            var SNPHashtable = filterCriteria.GetSNPHashtable();
-            var SNPMathFeatureHashtable = filterCriteria.GetSNPMathFeatureHashtable();
-
-            logger.WriteLine("請輸入Sample存放資料夾根路徑：");
-            string rootFilePath = @"C:\cubic\Chip\";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) rootFilePath = $"{AppDomain.CurrentDomain.BaseDirectory}Chip/";
-            logger.WriteLine("預設：" + rootFilePath);
-            string? inputfilePath = logger.ReadLine();
-            if (!String.IsNullOrEmpty(inputfilePath))
-            {
-                rootFilePath = inputfilePath;
-            }
-            var folderList = new SampleFileGetter(rootFilePath, logger);
-            HashSet<string> fileList = folderList.GetFileList;
-
-            logger.WriteLine("請輸入檢測結果的完整路徑：");
-            string outputPath = @"C:\cubic\Chip\output.csv";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) outputPath = $"{AppDomain.CurrentDomain.BaseDirectory}Chip/output.csv";
-            logger.WriteLine("預設：" + outputPath);
-            string? inputoutputPath = logger.ReadLine();
-            if (!String.IsNullOrEmpty(inputoutputPath))
-            {
-                outputPath = inputoutputPath;
-            }
-            var ExportFile = new ExportFile(SNPIndexList, SNPHashtable, logger);
-            /*
-            var SampleData = new ReadSampleData(logger);
-            foreach (var file in fileList)
-            {
-                logger.WriteLine($"執行續讀取欲掃描之SampleData 路徑: {file}");
-                SampleData.FilePath = file;
-                logger.WriteLine($"執行續localSampleData 設定完畢");
-
-                logger.WriteLine($"執行續開始輸出 基因資料");
-                ExportFile.SaveToCSV(SampleData, outputPath);
-                logger.WriteLine($"輸出基因完畢");
-
-                logger.WriteLine($"執行續開始輸出 數據資料");
-                ExportFile.SaveToMathCSV(SampleData, SNPMathFeatureHashtable, outputPath.Replace(".csv", "Math.csv"));
-                logger.WriteLine($"輸出數據完畢");
-            }*/
-            int batchSize = 50; // 每份的大小
-
             for (int i = 0; i < fileList.Count; i += batchSize)
             {
                 HashSet<string> batch = new HashSet<string>(fileList.Skip(i).Take(batchSize));
 
-                // 在這裡使用 batch 做你想做的事情，例如迴圈操作、處理資料等等
+                logger.WriteLine($"目前份數:{i}/{fileList.Count}", true);
 
-                HashSet<ReadSampleData> sampleData = new HashSet<ReadSampleData>();
-                Parallel.ForEach(batch, file =>
-                {
-                    logger.WriteLine($"現在進入執行續");
-                    // 這裡的 SampleData 和 exportFile 可能需要做相應的處理以避免多執行緒競爭條件，例如使用區域變數
-                    var localSampleData = new ReadSampleData(logger);
-                    //var localExportFile = new ExportFile(SNPIndexList, SNPHashtable, logger); // 使用區域變數以避免競爭條件
+                ThreadWorker threadWorker = new ThreadWorker(batch, logger);//使用ThreadWorker避免巢狀
+                HashSet<ReadSampleData> sampleData = threadWorker.Run();
 
-                    logger.WriteLine($"執行續讀取欲掃描之SampleData 路徑: {file}");
-                    localSampleData.FilePath = file;
-                    logger.WriteLine($"執行續localSampleData 設定完畢");
-                    sampleData.Add(localSampleData);
-                    /*
-                    lock (fileWriteLock)
-                    {
-                        logger.WriteLine($"執行續開始輸出 基因資料");
-                        localExportFile.SaveToCSV(localSampleData, outputPath);
-                        logger.WriteLine($"輸出基因完畢");
-
-                        logger.WriteLine($"執行續開始輸出 數據資料");
-                        localExportFile.SaveToMathCSV(localSampleData, SNPMathFeatureHashtable, outputPath.Replace(".csv", "Math.csv"));
-                        logger.WriteLine($"輸出數據完畢");
-                    }*/
-                });
                 ExportFile.SaveSetToCSV(sampleData, outputPath);
                 ExportFile.SaveSetToMathCSV(sampleData, SNPMathFeatureHashtable, outputPath.Replace(".csv", "Math.csv"));
 
-                // 從原始 fileList 中移除已處理的部分
-                fileList.ExceptWith(batch);
+                fileList.ExceptWith(batch);// 從原始 fileList 中移除已處理的部分
+                sampleData.Clear();
+                batch.Clear();
+                threadWorker = null;
             }
-            logger.WriteLine($"掃描完畢");
+            logger.WriteLine($"掃描完畢", true);
         }
         catch (Exception ex)
         {
