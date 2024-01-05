@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using TamakenService.Log;
+using TamakenService.Models.TextFileFilter;
 using TamakenService.Services.TextFileFlter;
 
 internal class Program
@@ -42,6 +43,7 @@ internal class Program
         }
         var folderList = new SampleFileGetter(rootFilePath, logger);
         HashSet<string> fileList = folderList.GetFileList;
+        int totalfile = fileList.Count;
 
         logger.WriteLine("請輸入檢測結果的完整路徑：", true);
         string outputPath = @"C:\cubic\Chip\output.csv";
@@ -63,35 +65,27 @@ internal class Program
         }
         try
         {
-            /* USEDB
-            string dbPath = @"Data Source=C:\cubic\DB\Height.db;Version=3;";
-            Console.WriteLine("請輸入 SQLite 資料庫連接字串：");
-            Console.WriteLine("預設：" + dbPath);
-            string inputDBPath = Console.ReadLine();
-            if (!String.IsNullOrEmpty(inputDBPath))
+
+            for (int i = 0; i < totalfile; i += batchSize)
             {
-                dbPath = inputDBPath;
-            }
-            var DBdata = new HeightDB(dbPath);
-            var SNPList = DBdata.getASAList();
-            */
-            for (int i = 0; i < fileList.Count; i += batchSize)
-            {
-                HashSet<string> batch = new HashSet<string>(fileList.Skip(i).Take(batchSize));
+                HashSet<string> batch = new HashSet<string>(fileList.Take(batchSize));
 
                 logger.WriteLine($"目前份數:{i} 剩餘: {fileList.Count}", true);
 
-                ThreadWorker threadWorker = new ThreadWorker(batch, logger);//使用ThreadWorker避免巢狀
-                HashSet<ReadSampleData> sampleData = threadWorker.Run();
+                ThreadWorker threadWorker = new ThreadWorker(batch, SNPMathFeatureHashtable, logger);//使用ThreadWorker避免巢狀
+                HashSet<ExportSampleData> sampleData = threadWorker.Run();
 
                 logger.WriteLine($"開始輸出基因:{i} 剩餘: {fileList.Count}", true);
                 ExportFile.SaveSetToCSV(sampleData, outputPath);
                 logger.WriteLine($"開始輸出數據:{i} 剩餘: {fileList.Count}", true);
-                ExportFile.SaveSetToMathCSV(sampleData, SNPMathFeatureHashtable, outputPath.Replace(".csv", "Math.csv"));
+                ExportFile.SaveSetToMathCSV(sampleData, outputPath.Replace(".csv", "Math.csv"));
 
                 logger.WriteLine($"已輸出當前批次資料", true);
                 fileList.ExceptWith(batch);// 從原始 fileList 中移除已處理的部分
+
+                logger.WriteLine($"開始清除sampleData : {sampleData.Count} 筆", true);
                 sampleData.Clear();
+                logger.WriteLine($"已移除sampleData", true);
                 batch.Clear();
                 threadWorker = null;
             }
